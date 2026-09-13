@@ -1,0 +1,29 @@
+TIMELINE
+
+Submission Deadline: February 28, 2025
+
+### NOVEMBER
+ANGGA
+- Implement codebase
+- Research design
+- Review literature on Curriculum Learning
+
+ADHI
+- Understand codebase
+- Investigate how well the CLIP model recognizes simulated scenes in AI2Thor
+- Study how arm manipulation works in AI2Thor
+
+YAMAN
+- Learn the basics of Deep RL
+- Review literature on Deep RL implementations in robotic arm manipulation
+
+### DECEMBER & JANUARY
+- Design Curriculum
+- Train PPO with/without Curriculum
+- Design Evaluation Metrics
+- Evaluate PPO
+
+### FEBRUARY
+- Paper writing
+- Paper discussion
+- Paper submission

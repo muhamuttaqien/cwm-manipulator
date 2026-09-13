@@ -1,0 +1,30 @@
+Objective: A robot arranging objects on a kitchen table!
+
+Direct Placement Commands
+1. Place the cup on the left side of the kitchen table.
+2. Put the plate in the center of the kitchen table.
+3. Place the knife on the top right corner of the kitchen table.
+4. Put the bowl near the center of the kitchen table.
+5. Place the glass at the far right side of the kitchen table.
+
+Relative Placement Commands
+1. Put the plate next to the cup on the kitchen table.
+2. Place the glass to the left of the bowl on the kitchen table.
+3. Put the spoon to the right of the knife on the kitchen table.
+4. Move the napkin to the right of the plate on the kitchen table.
+5. Place the salt shaker next to the pepper shaker on the kitchen table.
+
+It is possible to condition the table in the kitchen room in AI2-THOR to have specific objects placed on it for your manipulation tasks.
+
+You can achieve this by programmatically placing objects on the table before you start the task, using AI2-THOR's APIs to set up the environment. Here's how you can do it:
+
+# Example to spawn objects on the table
+controller = ai2thor.controller.Controller()
+
+# Load the kitchen scene with a table
+controller.reset('Kitchen1') # Or 'Kitchen2' depending on your preference
+
+# Specify object names and positions on the table
+controller.spawn_object('Cup', position={"x": 0.5, "y": 0.1, "z": 0.5})
+controller.spawn_object('Plate', position={"x": 0.7, "y": 0.1, "z": 0.3})
+controller.spawn_object('Knife', position={"x": 0.8, "y": 0.1, "z": 0.1})
