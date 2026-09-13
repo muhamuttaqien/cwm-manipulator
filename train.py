@@ -1,4 +1,5 @@
 import os
+import cv2
 import random; random.seed(0)
 import numpy as np; np.random.seed(0)
 
@@ -70,7 +71,7 @@ def manual_control_policy(controller, action_space, instruction):
             plt.axis("off")
 
             # Create the directory if it doesn't exist
-            save_dir = "adhi/img"
+            save_dir = "angga/img"
             os.makedirs(save_dir, exist_ok=True)
 
             # Save the plot with the desired filename
@@ -87,6 +88,214 @@ def manual_control_policy(controller, action_space, instruction):
     # Start listening for keyboard input
     with keyboard.Listener(on_press=on_press) as listener:
         listener.join()
+
+def manual_control_policy(controller, action_space, instruction, 
+                          BASE_STEP=0.05, ROT_STEP=5, ARM_STEP=0.05, img_dir="angga/img", video_dir="angga/video"):
+
+    os.makedirs(img_dir, exist_ok=True)
+    os.makedirs(video_dir, exist_ok=True)
+    image_count = 1
+    video_count = 1
+
+    print("""
+            W/S/A/D = move     Q/E = rotate
+            R/F     = look     I/K/J/L/U/O = arm
+            G/H     = pickup/release
+            P       = print state
+            0       = reset
+            SPACE   = start/stop recording
+            ESC     = quit
+            """)
+
+    last_similarity = None
+
+    recording = False 
+    video_writer = None
+    
+    while True:
+        frame = controller.last_event.cv2img.copy()
+        h, w = frame.shape[:2]
+
+        # Similarity
+        similarity_text = (
+            f"CLIP's Score Similarity: {last_similarity:.4f}"
+            if last_similarity is not None
+            else "CLIP's Score Similarity:"
+        )
+
+        cv2.putText(
+            frame, similarity_text,
+            (15, h - 40), cv2.FONT_HERSHEY_SIMPLEX, 0.6,
+            (255, 255, 255), 2, cv2.LINE_AA
+        )
+        
+        # Visible objects        
+        visible_objects = sorted(set(
+            obj["objectType"]
+            for obj in controller.last_event.metadata["objects"]
+            if obj["visible"]
+        ))
+        
+        visible_text = (
+            "Visible Objects: " + ", ".join(visible_objects)
+            if visible_objects
+            else "Visible:"
+        )
+        
+        cv2.putText(
+            frame, visible_text,
+            (15, h - 20), cv2.FONT_HERSHEY_SIMPLEX, 0.6,
+            (255, 255, 255), 2, cv2.LINE_AA
+        )
+
+        # Recording indicator 
+        if recording: 
+            cv2.putText(
+                frame, "REC", 
+                (w - 70, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, 
+                (0, 0, 255), 2, cv2.LINE_AA 
+            )
+
+        # Record annotated frame 
+        if recording and video_writer is not None: 
+            video_writer.write(frame)
+        
+        cv2.imshow("ManipulaTHOR Robot", frame)
+        key = cv2.waitKey(0) & 0xFF
+
+        # No key pressed 
+        if key == 255: 
+            continue
+
+        # Exit
+        if key == 27:
+            break
+
+        # Video recording
+        elif key == 32: # SPACE
+            if not recording:
+                h, w = frame.shape[:2]
+        
+                filename = f"angga/video/video_{video_count:03d}.mp4"
+                os.makedirs("angga", exist_ok=True)
+        
+                fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+                
+                video_writer = cv2.VideoWriter(
+                    filename, fourcc, 5.0, (w, h)
+                )
+        
+                recording = True
+                print("Recording started:", filename)
+        
+            else:
+                recording = False
+        
+                if video_writer is not None:
+                    video_writer.release()
+                    video_writer = None
+        
+                print("Recording stopped.")
+                video_count += 1
+
+        action_name = None
+        
+        # Reset position
+        if key == ord("0"):
+            controller.step(
+                action="Teleport",
+                position={"x": 0.15, "y": 0.90, "z": -0.75},
+                rotation={"x": 0, "y": 270, "z": 0},
+                horizon=30
+            )
+            controller.step(action="MoveArmBase", y=0.5)
+            action_name = "reset"
+            
+        elif key == ord("w"):
+            controller.step(action="MoveAgent", ahead=BASE_STEP, right=0, returnToStart=True)
+            action_name = "forward"
+
+        elif key == ord("s"):
+            controller.step(action="MoveAgent", ahead=-BASE_STEP, right=0, returnToStart=True)
+            action_name = "backward"
+
+        elif key == ord("a"):
+            controller.step(action="MoveAgent", ahead=0, right=-BASE_STEP, returnToStart=True)
+            action_name = "left"
+
+        elif key == ord("d"):
+            controller.step(action="MoveAgent", ahead=0, right=BASE_STEP, returnToStart=True)
+            action_name = "right"
+
+        elif key == ord("q"):
+            controller.step(action="RotateAgent", degrees=-ROT_STEP, returnToStart=True)
+            action_name = "rotate_left"
+
+        elif key == ord("e"):
+            controller.step(action="RotateAgent", degrees=ROT_STEP, returnToStart=True)
+            action_name = "rotate_right"
+
+        elif key == ord("r"):
+            controller.step(action="LookUp")
+            action_name = "look_up"
+
+        elif key == ord("f"):
+            controller.step(action="LookDown")
+            action_name = "look_down"
+
+        elif key in map(ord, "ikjluo"):
+            moves = {
+                ord("i"): (0, ARM_STEP, 0, "arm_forward"),
+                ord("k"): (0, -ARM_STEP, 0, "arm_backward"),
+                ord("j"): (-ARM_STEP, 0, 0, "arm_left"),
+                ord("l"): (ARM_STEP, 0, 0, "arm_right"),
+                ord("u"): (0, 0, ARM_STEP, "arm_up"),
+                ord("o"): (0, 0, -ARM_STEP, "arm_down"),
+            }
+            x, y, z, action_name = moves[key]
+            controller.step(
+                action="MoveArm",
+                position={"x": x, "y": y, "z": z},
+                coordinateSpace="wrist",
+                restrictMovement=True,
+                returnToStart=True
+            )
+
+        elif key == ord("g"):
+            controller.step(action="PickupObject")
+            action_name = "pickup"
+
+        elif key == ord("h"):
+            controller.step(action="ReleaseObject")
+            action_name = "release"
+
+        elif key == ord("p"):
+            e = controller.last_event.metadata
+            print("\nPosition:", e["agent"]["position"])
+            print("Rotation:", e["agent"]["rotation"])
+            print("Camera horizon:", e["agent"]["cameraHorizon"])
+            print("End-effector:", e["arm"]["handSphereCenter"])
+            continue
+
+        if action_name is None:
+            continue
+
+        event = controller.last_event
+
+        if not event.metadata["lastActionSuccess"]:
+            print("Action failed:", event.metadata["errorMessage"])
+
+        image_features, text_features = process_inputs(event.frame, instruction)
+        similarity = torch.cosine_similarity(image_features, text_features).item()
+
+        last_similarity = similarity
+
+        filename = f"image_{image_count:04d}_{action_name}_{similarity:.4f}.png"
+        # cv2.imwrite(os.path.join(save_dir, filename), frame)
+
+        image_count += 1
+
+    cv2.destroyAllWindows()
 
 def random_policy(controller, action_space, instruction, num_steps):
 
