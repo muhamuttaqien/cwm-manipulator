@@ -3,7 +3,6 @@ Our codebase for side-research work titled: Curriculum-based World Models in Rob
 
 ## Background
 
-The problem we aim to address in this research is how to enhance interaction between humans and robots in a smart home setting, particularly in the kitchen, with a focus on a robotic arm manipulator. We believe this can be achieved by implementing a multimodal robot that can understand both visual images and natural language instructions from humans to assist with tasks such as food preparation, utensil handling, and other kitchen activities.
+The problem we aim to address in this research is how to improve the generalization capability of robotic manipulators in smart home environments, particularly in the kitchen. We aim to develop a multimodal robot that can understand visual observations and natural language instructions while adapting to variations in objects, environments, and manipulation tasks.
 
-The methodology we propose involves using end-to-end deep reinforcement learning to process multimodal data (images and language), while enhancing the learning process through effective curriculum learning. The training environment will be simulated using the [AI2Thor simulator](https://ai2thor.allenai.org/manipulathor/), with the robot's capabilities focused solely on the manipulation tasks of an arm manipulator within this context.
-
+The methodology we propose involves using a curriculum-based world model that learns the dynamics of the environment from multimodal data, including images, language, and robot actions. Curriculum learning will be used to gradually increase task complexity and environmental variations to improve generalization. The training environment will be simulated using the [AI2Thor simulator](https://ai2thor.allenai.org/manipulathor/), with the robot's capabilities focused solely on arm manipulation tasks.
