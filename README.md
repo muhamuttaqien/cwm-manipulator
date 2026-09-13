@@ -1,5 +1,5 @@
 # CWM-Manipulator
-Our codebase for side-research work titled: Curriculum-based World Models in Robotic Manipulation
+Our codebase for a side research project titled “Curriculum-Based World Models for Robotic Manipulation,” targeted for submission to the 2027 International Conference on Robotics (ICIMIRA ITS) or arXiv preprint.
 
 ## Background
 
