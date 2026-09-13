@@ -139,7 +139,7 @@ def manual_control_policy(controller, action_space, instruction,
         visible_text = (
             "Visible Objects: " + ", ".join(visible_objects)
             if visible_objects
-            else "Visible:"
+            else "Visible Objects:"
         )
         
         cv2.putText(
