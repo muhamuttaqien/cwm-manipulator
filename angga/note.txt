@@ -3,3 +3,6 @@ https://ai2thor.allenai.org/manipulathor/documentation/#installation
 
 ManipulaTHOR Overview
 https://chatgpt.com/c/6aa638af-a708-83e9-b913-39a3a2169a63
+
+Research Brainstorming
+https://chatgpt.com/c/6aa7cfa6-7248-83ee-a384-a40773f31b66
