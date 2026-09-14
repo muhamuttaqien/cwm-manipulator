@@ -34,6 +34,7 @@ def process_inputs(frame, instruction):
     
     return image_features, text_features
 
+
 # Function for creating meta-information box
 def put_text_with_background(
     frame, text, org, font=cv2.FONT_HERSHEY_SIMPLEX,
@@ -122,6 +123,7 @@ def manual_control_policy(controller, action_space, instruction):
     # Start listening for keyboard input
     with keyboard.Listener(on_press=on_press) as listener:
         listener.join()
+        
 
 def manual_control_policy(controller, action_space, instruction, 
                           BASE_STEP=0.05, ARM_STEP=0.05, ROT_STEP=1.0, CAMERA_STEP=1.0, ARM_BASE = 0.5, ARM_BASE_STEP = 0.05, 
@@ -159,11 +161,7 @@ def manual_control_policy(controller, action_space, instruction,
             else "CLIP's Score Similarity:"
         )
         
-        put_text_with_background(
-            frame,
-            similarity_text,
-            (15, h - 140)
-        )
+        put_text_with_background(frame, similarity_text, (15, h - 140))
 
         # EE Position
         arm = controller.last_event.metadata["arm"]
@@ -176,11 +174,7 @@ def manual_control_policy(controller, action_space, instruction,
             f"z={ee_pos['z']:.2f}"
         )
         
-        put_text_with_background(
-            frame,
-            ee_text,
-            (15, h - 100)
-        )
+        put_text_with_background(frame, ee_text, (15, h - 100))
         
         # Visible objects        
         visible_objects = sorted(set(
@@ -195,11 +189,7 @@ def manual_control_policy(controller, action_space, instruction,
             else "Visible Objects:"
         )
         
-        put_text_with_background(
-            frame,
-            visible_text,
-            (15, h - 60)
-        )
+        put_text_with_background(frame, visible_text, (15, h - 60))
 
         # Pickup Ready
         pickupable_objects = arm["pickupableObjects"]
@@ -215,11 +205,7 @@ def manual_control_policy(controller, action_space, instruction,
             else "Pickup Ready: None"
         )
         
-        put_text_with_background(
-            frame,
-            pickup_text,
-            (15, h - 20)
-        )
+        put_text_with_background(frame, pickup_text, (15, h - 20))
 
         # Recording indicator 
         if recording: 
@@ -380,6 +366,7 @@ def manual_control_policy(controller, action_space, instruction,
 
     cv2.destroyAllWindows()
 
+
 def random_policy(controller, action_space, instruction, num_steps):
 
     for step in range(num_steps):
@@ -440,7 +427,8 @@ def random_policy(controller, action_space, instruction, num_steps):
         plt.show()
         import time
         time.sleep(1)
-        
+
+
 def train_ppo(controller, ppo_agent, action_space, state_dim, num_episodes=1000, max_timesteps=200):
     
     """
@@ -487,3 +475,60 @@ def train_ppo(controller, ppo_agent, action_space, state_dim, num_episodes=1000,
             ppo_agent.update()
 
         print(f"Episode {episode + 1}: Total Reward = {total_reward}")
+
+
+def train_a2c(controller, a2c_agent, action_space, state_dim, num_episodes=1000, max_timesteps=200):
+
+    """
+    Train the A2C agent in the AI2-THOR environment.
+
+    Parameters:
+    - controller: AI2-THOR controller
+    - a2c_agent: Instance of A2CAgent
+    - action_space: List of possible actions
+    - state_dim: Dimensionality of the state representation
+    - num_episodes: Number of training episodes
+    - max_timesteps: Maximum timesteps per episode
+    """
+
+    for episode in range(num_episodes):
+
+        controller.reset("FloorPlan20")
+        state = np.zeros(state_dim)  # Replace with actual state representation logic
+        total_reward = 0
+
+        for timestep in range(max_timesteps):
+            action_idx = a2c_agent.select_action(state)
+            action = action_space[action_idx]
+
+            # Perform the action in AI2-THOR
+            event = controller.step(action=action)
+
+            next_state = np.zeros(state_dim)  # Replace with actual state representation logic
+            reward = 0  # Replace with appropriate reward function
+            done = False  # Replace with terminal state logic
+
+            # Store in memory
+            a2c_agent.memory.rewards.append(reward)
+            a2c_agent.memory.is_terminals.append(done)
+
+            # Update state
+            state = next_state
+            total_reward += reward
+
+            # Update timestep
+            a2c_agent.timestep += 1
+
+            # A2C Update
+            if a2c_agent.timestep % a2c_agent.update_timestep == 0:
+                a2c_agent.update()
+
+            # Break if done
+            if done:
+                break
+
+        # Update remaining rollout at end of episode
+        if len(a2c_agent.memory.rewards) > 0:
+            a2c_agent.update()
+
+        print(f"Episode {episode + 1}: Total Reward = {total_reward}")        
