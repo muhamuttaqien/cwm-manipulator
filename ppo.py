@@ -3,6 +3,8 @@ import torch.nn as nn
 import torch.optim as optim
 import numpy as np
 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 class PPOAgent:
     def __init__(self, state_dim, action_dim, clip_epsilon=0.2, gamma=0.99, lr=3e-4, update_timestep=2000):
         self.clip_epsilon = clip_epsilon
@@ -69,6 +71,7 @@ class PPOAgent:
         # Clear memory
         self.memory.clear_memory()
 
+
 class PolicyNetwork(nn.Module):
     def __init__(self, state_dim, action_dim):
         super(PolicyNetwork, self).__init__()
@@ -93,6 +96,7 @@ class PolicyNetwork(nn.Module):
         dist_entropy = action_dist.entropy()
         return action_log_probs, state_values, dist_entropy
 
+
 class Memory:
     def __init__(self):
         self.states = []
@@ -107,5 +111,3 @@ class Memory:
         del self.log_probs[:]
         del self.rewards[:]
         del self.is_terminals[:]
-
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
