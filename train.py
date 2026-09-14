@@ -34,6 +34,40 @@ def process_inputs(frame, instruction):
     
     return image_features, text_features
 
+# Function for creating meta-information box
+def put_text_with_background(
+    frame, text, org, font=cv2.FONT_HERSHEY_SIMPLEX,
+    font_scale=0.6, text_color=(255, 255, 255), bg_color=(0, 0, 0),
+    thickness=2, padding=5
+):
+    (text_w, text_h), baseline = cv2.getTextSize(
+        text,
+        font,
+        font_scale,
+        thickness
+    )
+
+    x, y = org
+
+    cv2.rectangle(
+        frame,
+        (x - padding, y - text_h - padding),
+        (x + text_w + padding, y + baseline + padding),
+        bg_color,
+        -1
+    )
+
+    cv2.putText(
+        frame,
+        text,
+        (x, y),
+        font,
+        font_scale,
+        text_color,
+        thickness,
+        cv2.LINE_AA
+    )
+
 # Function for manual control using the keyboard
 def manual_control_policy(controller, action_space, instruction):
     image_count = [1]  # Initialize image counter
@@ -90,7 +124,8 @@ def manual_control_policy(controller, action_space, instruction):
         listener.join()
 
 def manual_control_policy(controller, action_space, instruction, 
-                          BASE_STEP=0.05, ROT_STEP=5, ARM_STEP=0.05, img_dir="angga/img", video_dir="angga/video"):
+                          BASE_STEP=0.05, ARM_STEP=0.05, ROT_STEP=1.0, CAMERA_STEP=1.0, ARM_BASE = 0.5, ARM_BASE_STEP = 0.05, 
+                          img_dir="angga/img", video_dir="angga/video"):
 
     os.makedirs(img_dir, exist_ok=True)
     os.makedirs(video_dir, exist_ok=True)
@@ -101,6 +136,7 @@ def manual_control_policy(controller, action_space, instruction,
             W/S/A/D = move     Q/E = rotate
             R/F     = look     I/K/J/L/U/O = arm
             G/H     = pickup/release
+            [/]     = Arm base up/down
             P       = print state
             0       = reset
             SPACE   = start/stop recording
@@ -122,11 +158,28 @@ def manual_control_policy(controller, action_space, instruction,
             if last_similarity is not None
             else "CLIP's Score Similarity:"
         )
+        
+        put_text_with_background(
+            frame,
+            similarity_text,
+            (15, h - 140)
+        )
 
-        cv2.putText(
-            frame, similarity_text,
-            (15, h - 40), cv2.FONT_HERSHEY_SIMPLEX, 0.6,
-            (255, 255, 255), 2, cv2.LINE_AA
+        # EE Position
+        arm = controller.last_event.metadata["arm"]
+        ee_pos = arm["handSphereCenter"]
+        
+        ee_text = (
+            f"EE Position: "
+            f"x={ee_pos['x']:.2f}, "
+            f"y={ee_pos['y']:.2f}, "
+            f"z={ee_pos['z']:.2f}"
+        )
+        
+        put_text_with_background(
+            frame,
+            ee_text,
+            (15, h - 100)
         )
         
         # Visible objects        
@@ -142,10 +195,30 @@ def manual_control_policy(controller, action_space, instruction,
             else "Visible Objects:"
         )
         
-        cv2.putText(
-            frame, visible_text,
-            (15, h - 20), cv2.FONT_HERSHEY_SIMPLEX, 0.6,
-            (255, 255, 255), 2, cv2.LINE_AA
+        put_text_with_background(
+            frame,
+            visible_text,
+            (15, h - 60)
+        )
+
+        # Pickup Ready
+        pickupable_objects = arm["pickupableObjects"]
+
+        pickupable_objects = [
+            object_id.split("|")[0]
+            for object_id in arm["pickupableObjects"]
+        ]
+        
+        pickup_text = (
+            "Pickup Ready: " + ", ".join(sorted(set(pickupable_objects)))
+            if pickupable_objects
+            else "Pickup Ready: None"
+        )
+        
+        put_text_with_background(
+            frame,
+            pickup_text,
+            (15, h - 20)
         )
 
         # Recording indicator 
@@ -236,12 +309,22 @@ def manual_control_policy(controller, action_space, instruction,
             action_name = "rotate_right"
 
         elif key == ord("r"):
-            controller.step(action="LookUp")
+            controller.step(action="LookUp", degrees=CAMERA_STEP)
             action_name = "look_up"
 
         elif key == ord("f"):
-            controller.step(action="LookDown")
+            controller.step(action="LookDown", degrees=CAMERA_STEP)
             action_name = "look_down"
+
+        elif key == ord("["):
+            ARM_BASE = min(1.0, ARM_BASE + ARM_BASE_STEP)
+            controller.step(action="MoveArmBase", y=ARM_BASE, speed=1, returnToStart=True)
+            action_name = "arm_base_up"
+        
+        elif key == ord("]"):
+            ARM_BASE = max(0.0, ARM_BASE - ARM_BASE_STEP)
+            controller.step(action="MoveArmBase", y=ARM_BASE, speed=1, returnToStart=True)
+            action_name = "arm_base_down"
 
         elif key in map(ord, "ikjluo"):
             moves = {
