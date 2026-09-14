@@ -54,18 +54,14 @@ def put_text_with_background(
         frame,
         (x - padding, y - text_h - padding),
         (x + text_w + padding, y + baseline + padding),
-        bg_color,
-        -1
+        bg_color, -1
     )
 
     cv2.putText(
-        frame,
-        text,
+        frame, text,
         (x, y),
-        font,
-        font_scale,
-        text_color,
-        thickness,
+        font, font_scale,
+        text_color, thickness,
         cv2.LINE_AA
     )
 
