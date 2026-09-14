@@ -7,7 +7,7 @@ https://chatgpt.com/c/6aa638af-a708-83e9-b913-39a3a2169a63
 Research Brainstorming
 https://chatgpt.com/c/6aa7cfa6-7248-83ee-a384-a40773f31b66
 
-Robot Manipulation through Task-Based Human Instructions using Adaptive Incremental Curriculum Learning
+Mobile Robot Manipulation through Human Instructions using Adaptive Incremental Curriculum Learning
 Implement CLIP-based A2C on Manipulation Tasks
 Adaptive Curriculum Learning
 4 different rooms
